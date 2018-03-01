@@ -10,18 +10,18 @@ use App\Http\Requests\SondageRequest;
 class SondageController extends Controller
 {
 	/**
-	* Instance de SondageGestion
-	*
-	* @var Lib\Gestion\SondageGestion
-	*/
+	 * Instance de SondageGestion
+	 *
+	 * @var Lib\Gestion\SondageGestion
+	 */
 	protected $sondageGestion;
 
 	/**
-	* Crée une nouvelle instance de SondageController
-	*
-	* @param Lib\Validation\SondageGestion $sondageGestion
-	* @return void
-	*/
+	 * Crée une nouvelle instance de SondageController
+	 *
+	 * @param Lib\Validation\SondageGestion $sondageGestion
+	 * @return void
+	 */
 	public function __construct(SondageGestion $sondageGestion)
 	{
 		// On initialise la propriété pour la gestion
@@ -29,65 +29,50 @@ class SondageController extends Controller
 	}
 
 	/**
-	* Traitement de l'URL de base : on affiche tous les sondages
-	*
-	* @return View
-	*/
-	public function index()
+	 * Traitement de l'URL de base : on affiche tous les sondages
+	 *
+	 * @return View
+	 */
+	public function index() 
 	{
-		// Ici on doit retourner la vue "index" en lui transmettant un paramètre "sondage" contenant les sondage
-		// C'est la méthode "getSondages" de la gestion qui est chargée de livrer les éléments de ces sondages
-		return view('index')->with('sondages', $this->sondageGestion->getSondages());
+		return view('index')->withSondages($this->sondageGestion->getSondages());
 	}
 
 	/**
-	* Traitement de la demande du formulaire de vote
-	*
-	* @param  string $nom
-	* @return View
-	*/
+	 * Traitement de la demande du formulaire de vote
+	 *
+	 * @param  string $nom
+	 * @return View
+	 */
 	public function create($nom)
 	{
-		// Ici on doit envoyer la vue "sondage" qui contient le formulaire du sondage
-		// C'est la méthode "getSondage" de la gestion qui est chargée de livrer les informations du sondage
-		// On doit transmettre 2 paramètres à la vue : "sondage" pour les informations du sondage et "nom" pour le nom du sondage
-		return view('sondage')->with([
-			'sondage' => $this->sondageGestion->getSondage($nom),
-			'nom' => $nom,
-		]);
+		// On récupère les données du sondage
+		$sondage = $this->sondageGestion->getSondage($nom);
+		// On crée le formulaire en transmettant les données et le nom du sondage
+		return view('sondage', compact('sondage', 'nom'));
 	}
 
 	/**
-	* Traitement du formulaire de vote
-	*
-	* @param  App\Http\Requests\SondageRequest $request
-	* @param  string $nom
-	* @return Redirect
-	*/
+	 * Traitement du formulaire de vote
+	 *
+	 * @param  App\Http\Requests\SondageRequest $request	 
+	 * @param  string $nom
+	 * @return Redirect
+	 */
 	public function store(SondageRequest $request, $nom)
 	{
-		// La validation a réussi
-		if($this->sondageGestion->save($nom, $request->all()))
+		// La validation a réussi 
+		if($this->sondageGestion->save($nom, $request->all())) 
 		{
-			// Ici on doit envoyer la vue "resultats" qui contient les résultats du sondage
-			// C'est la méthode "getSondage" de la gestion qui est chargée de livrer les informations du sondage
-			// C'est la méthode "getResults" de la gestion qui est chargée de livrer les résultats du sondage
-			// On doit transmettre 3 paramètres à la vue :
-			// - "sondage" pour les informations du sondage
-			// - "resultats" pour les résultats du sondage
-			// - "nom" pour le nom du sondage
-			return view('resultats')->with([
-				'sondage' => $this->sondageGestion->getSondage($nom),
-				'resultats' => $this->sondageGestion->getResults($nom),
-				// 'nom' => $nom,
-			]);
+			// On récupère les données du sondage
+			$sondage = $this->sondageGestion->getSondage($nom);
+			// On récupère les résultats
+			$resultats = $this->sondageGestion->getResults($nom);
+			// On envoie la page des résultats pour le votant
+			return view('resultats', compact('sondage', 'nom', 'resultats'));
 		}
-		return redirect()->back()->with([
-			'error' => "Désolé mais cet Email a déjà été utilisé pour ce sondage !",
-		]);
-		// Ici comme l'Email a déjà été utilisé on doit rediriger sur la même requête avec la méthode "back"
-		// On doit transmettre en session flash avec le nom "error" l'informations
-		// "Désolé mais cet Email a déjà été utilisé pour ce sondage !"
-		// On doit transmettre aussi les anciennes saisies
+
+		// L'Email a déjà été utilisé, on renvoie une erreur
+		return back()->with('error', 'Désolé mais cet Email a déjà été utilisé pour ce sondage !')->withInput();
 	}
 }
